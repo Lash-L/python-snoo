@@ -1,0 +1,57 @@
+[tool.poetry]
+name = "python-snoo"
+version = "1.0.0"
+description = "A package to control Snoos."
+authors = ["Lash-L <Lash-L@users.noreply.github.com>"]
+license = "GPL-3.0-only"
+readme = "README.md"
+repository = "https://github.com/Lash-L/python-snoo"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries",
+]
+packages = [{include = "python_snoo"}]
+keywords = ["snoo", "homeassistant"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+aiohttp = "*"
+freenub = "^0.1.0"
+
+
+[build-system]
+requires = ["poetry-core==1.8.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.dev.dependencies]
+pytest-asyncio = "*"
+pytest = "*"
+pre-commit = "^3.5.0"
+mypy = "*"
+ruff = "*"
+codespell = "*"
+
+[tool.semantic_release]
+branch = "main"
+version_toml = ["pyproject.toml:tool.poetry.version"]
+build_command = "pip install poetry && poetry build"
+[tool.semantic_release.commit_parser_options]
+allowed_tags = [
+    "chore",
+    "docs",
+    "feat",
+    "fix",
+    "refactor"
+]
+major_tags= ["refactor"]
+
+[tool.ruff]
+ignore = ["F403", "E741"]
+line-length = 120
+select=["E", "F", "UP", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+"*/__init__.py" = ["F401"]
