@@ -5,3 +5,8 @@ venv
 *.pyc
 .coverage
 testing.py # My scratch file.
+
+# Environment variables
+.env
+.env.local
+.env.*.local
