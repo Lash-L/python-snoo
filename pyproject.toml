@@ -19,6 +19,7 @@ keywords = ["snoo", "homeassistant"]
 [tool.poetry.dependencies]
 python = "^3.11"
 aiohttp = "*"
+aiomqtt = "*"
 freenub = "^0.1.0"
 mashumaro = "^3.15"
 
