@@ -1,6 +1,48 @@
 # CHANGELOG
 
 
+## v0.11.0 (2026-01-29)
+
+### Features
+
+- Enable support for snoo sleepytime timeout levels
+  ([#46](https://github.com/Lash-L/python-snoo/pull/46),
+  [`4c5a919`](https://github.com/Lash-L/python-snoo/commit/4c5a91907f5d4caf75dd4db919e30d86b94352d7))
+
+* Enable support for snoo sleepytime timeout levels with enum provide values
+
+* Update python_snoo/snoo.py
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* Update containers.py
+
+remove future annotations
+
+* Fix up linting as suggested
+
+* Fix ordering of imports
+
+As suggested by linter
+
+* Update snoo.py
+
+* Update python_snoo/snoo.py
+
+Co-authored-by: Luke Lashley <conway220@gmail.com>
+
+* Update snoo.py for linter
+
+* trailing comma for linter
+
+* chore: lint
+
+---------
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com> Co-authored-by: Luke Lashley
+  <conway220@gmail.com>
+
+
 ## v0.10.0 (2025-10-26)
 
 ### Features

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "python-snoo"
-version = "0.10.0"
+version = "0.11.0"
 description = "A package to control Snoos."
 authors = ["Lash-L <Lash-L@users.noreply.github.com>"]
 license = "GPL-3.0-only"
