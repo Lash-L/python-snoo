@@ -1,8 +1,8 @@
 from datetime import datetime
 
-from python_snoo.containers import Activity, BabyData, BreastfeedingActivity, DiaperActivity, DiaperTypes
-from python_snoo.exceptions import SnooBabyError
-from python_snoo.snoo import Snoo
+from .containers import Activity, BabyData, BreastfeedingActivity, DiaperActivity, DiaperTypes
+from .exceptions import SnooBabyError
+from .snoo import Snoo
 
 
 class Baby:

@@ -1,6 +1,6 @@
 import dataclasses
 import datetime
-from enum import StrEnum
+from enum import IntEnum, StrEnum
 from typing import Any, Union
 
 from mashumaro.mixins.json import DataClassJSONMixin
@@ -14,6 +14,45 @@ class SnooLevels(StrEnum):
     level3 = "LEVEL3"
     level4 = "LEVEL4"
     stop = "ONLINE"
+
+
+class SnooNoiseTimeoutLevels(IntEnum):
+    _5_minutes = 5
+    _10_minutes = 10
+    _15_minutes = 15
+    _20_minutes = 20
+    _25_minutes = 25
+    _30_minutes = 30
+    _35_minutes = 35
+    _40_minutes = 40
+    _45_minutes = 45
+    _50_minutes = 50
+    _55_minutes = 55
+    _60_minutes = 60
+    _65_minutes = 65
+    _70_minutes = 70
+    _75_minutes = 75
+    _80_minutes = 80
+    _85_minutes = 85
+    _90_minutes = 90
+    _95_minutes = 95
+    _100_minutes = 100
+    _105_minutes = 105
+    _110_minutes = 110
+    _115_minutes = 115
+    _120_minutes = 120
+    _125_minutes = 125
+    _130_minutes = 130
+    _135_minutes = 135
+    _140_minutes = 140
+    _145_minutes = 145
+    _150_minutes = 150
+    _155_minutes = 155
+    _160_minutes = 160
+    _165_minutes = 165
+    _170_minutes = 170
+    _175_minutes = 175
+    _180_minutes = 180
 
 
 class SnooStates(StrEnum):
