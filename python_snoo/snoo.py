@@ -365,7 +365,7 @@ class Snoo:
         client_id = f"HA_{uuid.uuid4()}"
         user_name = "?SDK=iOS&Version=2.40.1"
 
-        logging.debug(f"Attempting to connect to wss://{host}:{port}{websocket_path}")
+        _LOGGER.debug(f"Attempting to connect to wss://{host}:{port}{websocket_path}")
 
         # The default SSL context creation is a blocking I/O operation.
         # Run it in a separate thread to avoid blocking the Home Assistant event loop.
@@ -385,7 +385,7 @@ class Snoo:
                 protocol=aiomqtt.ProtocolVersion.V31,
                 timeout=10,
             ) as client:
-                logging.info(f"✅ Successfully connected to MQTT broker for {device.serialNumber}!")
+                _LOGGER.info(f"✅ Successfully connected to MQTT broker for {device.serialNumber}!")
 
                 # Acquire the lock, add the client to the map, and notify waiting tasks.
                 async with self._client_cond:
@@ -394,19 +394,19 @@ class Snoo:
 
                 topic = f"{device.awsIoT.thingName}/state_machine/activity_state"
                 await client.subscribe(topic)
-                logging.info(f"Subscribed to topic: {topic}")
+                _LOGGER.info(f"Subscribed to topic: {topic}")
 
                 async for message in client.messages:
-                    logging.debug(f"Received message on topic '{message.topic}': {message.payload.decode()}")
+                    _LOGGER.debug(f"Received message on topic '{message.topic}': {message.payload.decode()}")
                     function(SnooData.from_json(message.payload.decode()))
 
         except aiomqtt.MqttError as e:
-            logging.error(f"MQTT connection for {device.serialNumber} failed: {e}")
+            _LOGGER.error(f"MQTT connection for {device.serialNumber} failed: {e}")
         except Exception as e:
-            logging.error(f"MQTT connection for {device.serialNumber} failed with an unexpected error: {e}")
+            _LOGGER.error(f"MQTT connection for {device.serialNumber} failed with an unexpected error: {e}")
         finally:
             # When the connection is lost, remove the client from the map.
-            logging.info(f"MQTT connection closed for {device.serialNumber}.")
+            _LOGGER.info(f"MQTT connection closed for {device.serialNumber}.")
             async with self._client_cond:
                 if device.serialNumber in self._client_map:
                     del self._client_map[device.serialNumber]
