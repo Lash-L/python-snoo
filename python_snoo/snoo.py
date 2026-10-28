@@ -19,6 +19,12 @@ from .pubnub_async import SnooPubNub
 
 _LOGGER = logging.getLogger(__name__)
 
+# Reconnect policy for the MQTT subscription (see subscribe_mqtt).
+MQTT_RECONNECT_MIN_DELAY = 1.0
+MQTT_RECONNECT_MAX_DELAY = 300.0
+# A connection that lived at least this long is considered healthy: the backoff resets after it drops.
+MQTT_STABLE_CONNECTION_SECONDS = 60.0
+
 
 class Snoo:
     def __init__(self, email: str, password: str, clientsession: aiohttp.ClientSession):
@@ -356,6 +362,47 @@ class Snoo:
         self._mqtt_tasks[device.serialNumber] = asyncio.create_task(self.subscribe_mqtt(device, function))
 
     async def subscribe_mqtt(self, device: SnooDevice, function: Callable):
+        """Keep an MQTT subscription for ``device`` alive until the task is cancelled.
+
+        Every dropped or failed connection is retried with exponential backoff
+        (``MQTT_RECONNECT_MIN_DELAY`` .. ``MQTT_RECONNECT_MAX_DELAY`` seconds). The
+        backoff resets once a connection has stayed up for
+        ``MQTT_STABLE_CONNECTION_SECONDS``. Each attempt reads the current id token,
+        so a token refreshed by ``schedule_reauthorization`` is picked up automatically.
+        """
+        delay = MQTT_RECONNECT_MIN_DELAY
+        while True:
+            connected_at: float | None = None
+            try:
+                connected_at = await self._run_mqtt_session(device, function)
+            except asyncio.CancelledError:
+                _LOGGER.debug(f"MQTT subscription task for {device.serialNumber} cancelled.")
+                raise
+            except aiomqtt.MqttError as e:
+                _LOGGER.warning(f"MQTT connection for {device.serialNumber} failed: {e}")
+            except Exception:
+                _LOGGER.exception(f"MQTT connection for {device.serialNumber} failed with an unexpected error")
+            finally:
+                # When the connection is lost, remove the client from the map so
+                # send_command waits for the next connection instead of using a dead client.
+                async with self._client_cond:
+                    if device.serialNumber in self._client_map:
+                        del self._client_map[device.serialNumber]
+
+            if connected_at is not None:
+                uptime = asyncio.get_running_loop().time() - connected_at
+                if uptime >= MQTT_STABLE_CONNECTION_SECONDS:
+                    delay = MQTT_RECONNECT_MIN_DELAY
+            _LOGGER.info(f"Reconnecting MQTT subscription for {device.serialNumber} in {delay:.0f} s.")
+            await asyncio.sleep(delay)
+            delay = min(delay * 2, MQTT_RECONNECT_MAX_DELAY)
+
+    async def _run_mqtt_session(self, device: SnooDevice, function: Callable) -> float | None:
+        """Run one MQTT connection until it drops.
+
+        Returns the loop time at which the connection was established, or ``None``
+        if connecting failed. Exceptions propagate to ``subscribe_mqtt``.
+        """
         host = device.awsIoT.clientEndpoint
         port = 443
         websocket_path = "/mqtt"
@@ -364,8 +411,9 @@ class Snoo:
         password = None
         client_id = f"HA_{uuid.uuid4()}"
         user_name = "?SDK=iOS&Version=2.40.1"
+        connected_at: float | None = None
 
-        logging.debug(f"Attempting to connect to wss://{host}:{port}{websocket_path}")
+        _LOGGER.debug(f"Attempting to connect to wss://{host}:{port}{websocket_path}")
 
         # The default SSL context creation is a blocking I/O operation.
         # Run it in a separate thread to avoid blocking the Home Assistant event loop.
@@ -385,7 +433,8 @@ class Snoo:
                 protocol=aiomqtt.ProtocolVersion.V31,
                 timeout=10,
             ) as client:
-                logging.info(f"✅ Successfully connected to MQTT broker for {device.serialNumber}!")
+                connected_at = asyncio.get_running_loop().time()
+                _LOGGER.info(f"✅ Successfully connected to MQTT broker for {device.serialNumber}!")
 
                 # Acquire the lock, add the client to the map, and notify waiting tasks.
                 async with self._client_cond:
@@ -394,19 +443,16 @@ class Snoo:
 
                 topic = f"{device.awsIoT.thingName}/state_machine/activity_state"
                 await client.subscribe(topic)
-                logging.info(f"Subscribed to topic: {topic}")
+                _LOGGER.info(f"Subscribed to topic: {topic}")
 
                 async for message in client.messages:
-                    logging.debug(f"Received message on topic '{message.topic}': {message.payload.decode()}")
-                    function(SnooData.from_json(message.payload.decode()))
-
-        except aiomqtt.MqttError as e:
-            logging.error(f"MQTT connection for {device.serialNumber} failed: {e}")
-        except Exception as e:
-            logging.error(f"MQTT connection for {device.serialNumber} failed with an unexpected error: {e}")
+                    payload = message.payload.decode()
+                    _LOGGER.debug(f"Received message on topic '{message.topic}': {payload}")
+                    try:
+                        function(SnooData.from_json(payload))
+                    except Exception:
+                        # A bad payload or a failing callback must not tear down the connection.
+                        _LOGGER.exception(f"Error handling MQTT message for {device.serialNumber}")
         finally:
-            # When the connection is lost, remove the client from the map.
-            logging.info(f"MQTT connection closed for {device.serialNumber}.")
-            async with self._client_cond:
-                if device.serialNumber in self._client_map:
-                    del self._client_map[device.serialNumber]
+            _LOGGER.info(f"MQTT connection closed for {device.serialNumber}.")
+        return connected_at
